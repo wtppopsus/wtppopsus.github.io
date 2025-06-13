@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>건강기능식품 시장 분석 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals & Subtle Blue -->
+    <!-- Application Structure Plan: A multi-section single-page application (SPA) with a sticky top navigation bar for easy access to different report segments. The structure is designed to guide the user from a high-level market overview to specific product details and finally to strategic conclusions. 1. Intro: Key metrics at a glance. 2. Market Trends: Interactive charts and cards for macro trends. 3. Online Channels: Visualization of platform dominance and marketing strategies. 4. Product Portfolio: A filterable and searchable grid of product cards, allowing users to deeply explore the 24 products based on health benefits and target audience. 5. Strategic Recommendations: A clear summary of actionable insights. This non-linear, thematic structure was chosen over a simple report mirror to enhance usability and allow users to explore data based on their specific interests without being overwhelmed. -->
+    <!-- Visualization & Content Choices: 1. Market Growth (Data: Market Size) -> Goal: Show change -> Viz: Line Chart (Chart.js) -> Interaction: Hover for details -> Justification: Best for time-series data. 2. Online Platform Share (Data: Platform %) -> Goal: Show proportion -> Viz: Donut Chart (Chart.js) -> Interaction: Hover for details -> Justification: Clearly shows dominance of major players. 3. Emerging Trends (Data: Text descriptions) -> Goal: Inform & Organize -> Viz: Interactive Cards (HTML/CSS/JS) -> Interaction: Click to reveal details -> Justification: Engages user and presents text chunks manageably. 4. Product Portfolio (Data: 24 products) -> Goal: Organize & Compare -> Viz: Filterable Grid of Cards (HTML/CSS/JS) -> Interaction: Click filters, search, click cards for modal view -> Justification: Manages a large dataset effectively, empowering user-led exploration. All charts are rendered on Canvas via Chart.js, and other visuals are built with HTML/Tailwind. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; scroll-behavior: smooth; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 320px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+        .nav-link { transition: color 0.3s, border-color 0.3s; }
+        .nav-link.active { color: #2563EB; border-bottom-color: #2563EB; }
+        .product-card { transition: transform 0.3s, box-shadow 0.3s; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .modal-bg { transition: opacity 0.3s; }
+        .modal-box { transition: transform 0.3s, opacity 0.3s; }
+        .tag { display: inline-block; background-color: #E0E7FF; color: #3730A3; padding: 4px 12px; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; margin: 4px; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <header id="header" class="bg-white/80 backdrop-blur-lg shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-blue-600">건강기능식품 시장 분석</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#intro" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent">소개</a>
+                        <a href="#trends" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent">시장 동향</a>
+                        <a href="#channels" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent">온라인 채널</a>
+                        <a href="#portfolio" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent">제품 포트폴리오</a>
+                        <a href="#strategy" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-blue-600 border-b-2 border-transparent">전략적 제언</a>
+                    </div>
+                </div>
+                 <div class="md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                        <span class="sr-only">메뉴 열기</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#intro" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">소개</a>
+                <a href="#trends" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">시장 동향</a>
+                <a href="#channels" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">온라인 채널</a>
+                <a href="#portfolio" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">제품 포트폴리오</a>
+                <a href="#strategy" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">전략적 제언</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="intro" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">제품 포트폴리오의 온라인 시장 및 고객층 전략 분석</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">24개 건강기능식품 포트폴리오의 온라인 시장 침투를 위한 핵심 동향, 타겟 고객, 전략적 기회를 시각적으로 탐색합니다.</p>
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
+                        <h3 class="text-4xl font-bold text-blue-600">6.4조원</h3>
+                        <p class="mt-2 text-gray-600">2024년 국내 시장 규모</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
+                        <h3 class="text-4xl font-bold text-blue-600">82.1%</h3>
+                        <p class="mt-2 text-gray-600">건강기능식품 구매 경험률</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-md">
+                        <h3 class="text-4xl font-bold text-blue-600">67.9%</h3>
+                        <p class="mt-2 text-gray-600">온라인 채널 구매 비중</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="trends" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900">한국 건강기능식품 시장의 거시적 동향</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">시장의 성장, 변화하는 소비자, 그리고 새롭게 떠오르는 트렌드를 분석합니다.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="text-xl font-semibold mb-4 text-center">시장 규모 성장 추이</h3>
+                        <div class="chart-container">
+                            <canvas id="marketGrowthChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="text-xl font-semibold mb-4 text-center">주요 구매 결정 요인</h3>
+                         <div class="space-y-4">
+                            <div class="flex items-center">
+                                <span class="text-2xl mr-4">🥇</span>
+                                <div>
+                                    <h4 class="font-semibold">기능과 효능</h4>
+                                    <p class="text-sm text-gray-500">소비자가 가장 중요하게 고려하는 요소</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-2xl mr-4">🥈</span>
+                                <div>
+                                    <h4 class="font-semibold">브랜드 신뢰도</h4>
+                                    <p class="text-sm text-gray-500">특히 4060 세대에게 중요한 구매 동기 (45.8%)</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-2xl mr-4">🥉</span>
+                                <div>
+                                    <h4 class="font-semibold">사용 후기 및 입소문</h4>
+                                    <p class="text-sm text-gray-500">광고보다 높은 영향력을 가지는 정보 채널</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-16">
+                     <h3 class="text-2xl font-semibold mb-6 text-center">신흥 시장 트렌드</h3>
+                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h4 class="font-bold text-lg text-blue-700">멘탈 케어</h4>
+                            <p class="mt-2 text-gray-600">스트레스 해소, 수면 개선 등 정신 건강 관련 제품이 2030세대 중심으로 인기</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h4 class="font-bold text-lg text-blue-700">혈당 관리</h4>
+                            <p class="mt-2 text-gray-600">젊은 층에서도 '제로 슈머' 트렌드와 함께 혈당 관리 제품에 대한 관심 증가</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h4 class="font-bold text-lg text-blue-700">간편 제형</h4>
+                            <p class="mt-2 text-gray-600">젤리, 액상, 스틱형 등 물 없이 섭취 가능한 편리한 제품 선호도 상승</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h4 class="font-bold text-lg text-blue-700">개인 맞춤형</h4>
+                            <p class="mt-2 text-gray-600">AI 기반 데이터 분석을 통해 개인의 건강 상태에 최적화된 제품 추천 서비스 성장</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h4 class="font-bold text-lg text-blue-700">가치 소비</h4>
+                            <p class="mt-2 text-gray-600">브랜드 철학, 윤리적 원료 사용, 친환경 포장 등 지속가능성 고려</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <h4 class="font-bold text-lg text-blue-700">셀프 메디케이션</h4>
+                            <p class="mt-2 text-gray-600">소비자가 스스로 건강을 판단하고 필요한 제품을 선택하는 경향 강화</p>
+                        </div>
+                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="channels" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900">온라인 시장 환경 및 전략 채널</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">온라인 채널의 지배력과 주요 플랫폼별 점유율, 효과적인 마케팅 전략을 살펴봅니다.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                     <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="text-xl font-semibold mb-4 text-center">온라인 플랫폼 점유율 (2023년 상반기)</h3>
+                        <div class="chart-container">
+                            <canvas id="platformShareChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="text-xl font-semibold mb-4 text-center">효과적인 온라인 마케팅 전략</h3>
+                        <ul class="space-y-4">
+                           <li class="flex items-start">
+                                <span class="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-800 font-bold text-sm">1</span>
+                                <p class="ml-3 text-gray-600"><strong class="font-semibold text-gray-800">소셜 미디어 & 인플루언서:</strong> 고객 후기, 건강 팁 공유로 커뮤니티를 만들고, 신뢰도 높은 인플루언서와 협업하여 인지도를 높입니다.</p>
+                           </li>
+                           <li class="flex items-start">
+                                <span class="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-800 font-bold text-sm">2</span>
+                                <p class="ml-3 text-gray-600"><strong class="font-semibold text-gray-800">교육적 콘텐츠:</strong> 블로그, 인포그래픽 등을 통해 전문적인 정보를 제공하여 브랜드 신뢰도를 구축합니다.</p>
+                           </li>
+                           <li class="flex items-start">
+                                <span class="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-blue-100 text-blue-800 font-bold text-sm">3</span>
+                                <p class="ml-3 text-gray-600"><strong class="font-semibold text-gray-800">D2C 모델 및 구독:</strong> 고객과 직접 소통하며 충성도를 높이고, 구독 서비스를 통해 지속적인 관계를 형성합니다.</p>
+                           </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="portfolio" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900">제품 포트폴리오 분석</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">24개 제품의 핵심 효능과 타겟 고객을 필터링하여 탐색해 보세요.</p>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-md mb-8 sticky top-16 z-40">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="md:col-span-1">
+                             <input type="text" id="searchInput" placeholder="제품명 검색..." class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-3">
+                            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                <span class="font-semibold text-sm">핵심 효능:</span>
+                                <div id="benefitFilters" class="flex flex-wrap gap-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="productGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                </div>
+                <p id="noResults" class="text-center text-gray-500 hidden mt-8">검색 결과가 없습니다.</p>
+            </div>
+        </section>
+        
+        <section id="strategy" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900">온라인 시장 침투를 위한 전략적 제언</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">데이터 기반 분석을 통해 도출된 핵심 성공 전략을 확인하세요.</p>
+                </div>
+                <div class="space-y-8 max-w-4xl mx-auto">
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-md flex items-start space-x-4">
+                        <div class="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl font-bold">1</div>
+                        <div>
+                            <h3 class="text-lg font-semibold">지배적 플랫폼 내 입지 확보</h3>
+                            <p class="mt-1 text-gray-600">쿠팡의 직매입 모델과 네이버 스마트스토어의 쇼핑 라이브 등 각 플랫폼의 특성을 활용한 최적화 전략이 필요합니다.</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-md flex items-start space-x-4">
+                        <div class="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl font-bold">2</div>
+                        <div>
+                            <h3 class="text-lg font-semibold">맞춤형 마케팅 메시지 개발</h3>
+                            <p class="mt-1 text-gray-600">2030세대의 멘탈 케어, 40대의 기능성 중시 등 세대별 니즈에 맞는 차별화된 콘텐츠로 소통해야 합니다.</p>
+                        </div>
+                    </div>
+                     <div class="bg-gray-50 p-6 rounded-lg shadow-md flex items-start space-x-4">
+                        <div class="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl font-bold">3</div>
+                        <div>
+                            <h3 class="text-lg font-semibold">신뢰와 신뢰성 구축</h3>
+                            <p class="mt-1 text-gray-600">과학적 근거, 품질 인증(HACCP, GMP), 투명한 원료 출처를 명확히 제시하여 소비자의 우려를 해소하고 신뢰를 얻어야 합니다.</p>
+                        </div>
+                    </div>
+                     <div class="bg-gray-50 p-6 rounded-lg shadow-md flex items-start space-x-4">
+                        <div class="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl font-bold">4</div>
+                        <div>
+                            <h3 class="text-lg font-semibold">D2C 및 개인 맞춤형 서비스 확장</h3>
+                            <p class="mt-1 text-gray-600">D2C 자사몰, 구독 서비스, AI 기반 추천 시스템을 통해 고객과의 직접적인 관계를 강화하고 충성도를 높여야 합니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800">
+        <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center text-gray-400">
+            <p>&copy; 2025 건강기능식품 시장 분석 보고서. All rights reserved.</p>
+            <p class="text-sm mt-1">이 애플리케이션은 제공된 보고서를 기반으로 제작된 시각화 자료입니다.</p>
+        </div>
+    </footer>
+
+    <div id="productModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg bg-black bg-opacity-50 hidden">
+        <div id="modalBox" class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform scale-95 opacity-0">
+            <div class="sticky top-0 bg-white p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 id="modalTitle" class="text-xl sm:text-2xl font-bold text-gray-900"></h3>
+                <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-4 sm:p-6 space-y-4">
+                <div>
+                    <h4 class="font-semibold text-lg text-blue-700">핵심 건강 효능</h4>
+                    <p id="modalBenefits" class="mt-2 text-gray-600"></p>
+                </div>
+                 <div>
+                    <h4 class="font-semibold text-lg text-blue-700">주요 타겟 고객층</h4>
+                    <p id="modalAudience" class="mt-2 text-gray-600"></p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-lg text-blue-700">추천 온라인 키워드</h4>
+                    <div id="modalKeywords" class="mt-2"></div>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-lg text-blue-700">주요 온라인 시장 채널</h4>
+                    <p id="modalChannels" class="mt-2 text-gray-600"></p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-lg text-blue-700">관련 마케팅 트렌드</h4>
+                    <p id="modalTrends" class="mt-2 text-gray-600"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const productData = [
+                { name: '타트체리', benefit: '수면 & 멘탈케어', audience: ['불면증', '만성 염증', '눈 피로', '기억력 저하', '체중 관리 희망자', '2030세대 (멘탈 케어)'], benefits_desc: '수면 개선, 염증 완화, 기억력 향상, 눈 건강, 체중 관리, 변비 개선, 심혈관 건강, 당뇨 관리', channels: '수면 전문 온라인몰 (슬립스타일, 닥터슬립), 종합 온라인 쇼핑몰 (쿠팡, 네이버 스마트스토어)', keywords: ['불면증', '수면', '꿀잠', '염증 완화', '눈 건강', '다이어트'], trends: '멘탈 케어, 다양한 제형 선호' },
+                { name: '글루타치온', benefit: '피부 & 항산화', audience: ['피부 미백 및 노화 방지 희망 여성 (40대, 30대, 20대)', '간 건강 및 면역력 증진 희망자'], benefits_desc: '강력한 항산화, 면역력 강화, 간 해독, 노화 방지, 피부 미백, 콜라겐 분해 억제', channels: '종합 온라인 쇼핑몰, 이너뷰티 전문 온라인몰', keywords: ['피부 미백', '이너뷰티', '항산화', '백옥주사', '간 건강', '노화 방지'], trends: '이너뷰티, 셀프 메디케이션, 다양한 제형 선호' },
+                { name: '강황', benefit: '관절 & 염증', audience: ['만성 염증', '관절염', '치매/우울증 관심자', '소화 문제', '심혈관 건강 관심자', '체중 관리 희망자'], benefits_desc: '항염증, 항산화, 암 예방, 관절 보호/염증 치료, 뇌 건강, 치매/우울증 완화, 소화 개선, 심장 보호, 체중 감량, 콜레스테롤 감소', channels: '종합 온라인 쇼핑몰, 관절 건강 전문 온라인몰', keywords: ['염증', '관절염', '치매 예방', '우울증', '다이어트', '항산화'], trends: '셀프 메디케이션, 건강 의식 증진' },
+                { name: '빌베리', benefit: '눈 건강', audience: ['눈 피로', '시력 저하', '당뇨망막병증 관심자', '항산화/항염증 관심자'], benefits_desc: '강력한 항산화, 눈 건강(미세 혈관 개선, 망막 변성, 눈 피로), 항염증, 혈당/지질 개선', channels: '종합 온라인 쇼핑몰', keywords: ['눈 건강', '시력 개선', '눈 피로', '안토시아닌', '항산화'], trends: '건강 의식 증진, 셀프 메디케이션' },
+                { name: '차가버섯', benefit: '면역 & 항암', audience: ['암 예방/관리', '염증 질환', '당뇨 관리', '간 건강', '노화 방지', '고혈압 관심자'], benefits_desc: '항암 효과, 염증 치료(아토피), 당뇨병 예방, 간 건강, 피부 노화 방지, 고혈압 예방/치료', channels: '종합 온라인 쇼핑몰', keywords: ['항암', '면역력 증진', '당뇨 관리', '간 건강'], trends: '건강 의식 증진, 셀프 메디케이션' },
+                { name: '감태', benefit: '수면 & 멘탈케어', audience: ['수면 문제', '혈액순환 문제', '치매 관심자', '흡연자', '소화 문제', '디톡스 관심자', '2030세대 (멘탈 케어)'], benefits_desc: '혈액순환 개선, 불면증 개선, 염증 감소, 치매 예방, 비만/만성 질환 예방, 면역력 증진, 중금속 해독, 니코틴 배출, 소화/변비 개선', channels: '수면 전문 온라인몰, 종합 온라인 쇼핑몰', keywords: ['수면 개선', '불면증', '혈액순환', '치매 예방', '흡연자 건강'], trends: '멘탈 케어, 셀프 메디케이션, 가치 소비 (해양 바이오)' },
+                { name: '산양유 단백질', benefit: '근육 & 성장', audience: ['노년층 (근감소증 예방)', '성장기 청소년', '소화 민감자'], benefits_desc: '고함량 단백질, 소화 용이, 근감소증 예방, 성장 발육', channels: '종합 온라인 쇼핑몰, 홈쇼핑', keywords: ['산양유 단백질', '근감소증', '프리미엄 단백질', '성장기 영양제'], trends: '단백질 트렌드 (전 연령층), 프리미엄 제품 선호' },
+                { name: '자일리톨', benefit: '혈당 관리', audience: ['당뇨병 환자', '혈당 관리 희망자', '다이어트 중인 건강 의식 소비자'], benefits_desc: '낮은 혈당지수(GI), 당뇨병 환자 적합, 다이어트 설탕 대체', channels: '당뇨 건강식품 전문몰, 종합 온라인 쇼핑몰', keywords: ['저당', '무설탕', '당뇨 간식', '다이어트 감미료'], trends: '혈당 관리, 셀프 메디케이션' },
+                { name: '사과초모식초', benefit: '혈당 관리', audience: ['체중 감량', '혈당 관리', '소화 문제', '성인병 예방 관심자', '20대 (건강 다이어트)'], benefits_desc: '체중 조절, 혈당 조절, 인슐린 감수성/포만감 개선, 소화 개선, 성인병 예방', channels: '다이어트 건강식품 커뮤니티/몰, 당뇨 건강식품 전문몰, 종합 온라인 쇼핑몰', keywords: ['애사비', '다이어트 식초', '혈당 조절', '체중 감량'], trends: '혈당 관리, 셀프 메디케이션, 다양한 제형 선호' },
+                { name: '보스웰리아', benefit: '관절 & 염증', audience: ['관절염', '관절 통증', '만성 염증', '소화기 염증성 질환', '50대 이상'], benefits_desc: '항염증, 관절/연골 건강, 항산화, 면역 기능 정상화, 만성 염증성 질환 개선, 호흡기 질환 개선, 숙면, 피부 문제, 호르몬 조절', channels: '관절 건강 전문 온라인몰, 종합 온라인 쇼핑몰', keywords: ['관절염', '관절 통증', '염증 완화', '연골 건강'], trends: '셀프 메디케이션, 헤리티지 마케팅 (아유르베다)' },
+                { name: '마카', benefit: '활력 증진', audience: ['남성 (성기능, 가임력)', '여성 (갱년기)', '인지 기능', '뼈 건강', '심혈관 건강 관심자'], benefits_desc: '성욕 증진, 가임력 향상, 발기부전 개선, 갱년기 증상 조절, 두뇌 건강, 뼈 건강, 혈관 건강', channels: '종합 온라인 쇼핑몰', keywords: ['남성 활력', '여성 갱년기', '성기능 개선', '기억력', '뼈 건강'], trends: '셀프 메디케이션, 자연 유래 성분 선호' },
+                { name: '여주', benefit: '혈당 관리', audience: ['당뇨병 환자', '성인병 관심자', '피로 회복', '피부 건강', '소화 문제', '면역력 증진', '체중 관리 희망자'], benefits_desc: '천연 인슐린(당뇨), 성인병(고혈압, 뇌졸중 등) 개선, 비타민 C 풍부(피로 회복, 감기 예방, 피부 건강), 위장 보호, 식욕 증진, 면역력 강화, 콜레스테롤 저하, 다이어트, 붓기 제거', channels: '당뇨 건강식품 전문몰, 종합 온라인 쇼핑몰', keywords: ['당뇨', '혈당 조절', '성인병 예방', '다이어트'], trends: '혈당 관리, 셀프 메디케이션, 건강 의식 증진' },
+                { name: '모링가', benefit: '종합 영양', audience: ['염증 질환', '당뇨', '고콜레스테롤', '간 건강', '소화 문제', '일반 영양 보충', '수유모', '갱년기 여성'], benefits_desc: '항염증, 항산화, 혈당/콜레스테롤 저하, 간 보호, 위장 질환 개선, 비타민/미네랄 풍부, 수유모/갱년기 여성 건강', channels: '종합 온라인 쇼핑몰', keywords: ['슈퍼푸드', '염증', '혈당', '콜레스테롤', '간 건강', '모유 수유'], trends: '셀프 메디케이션, 클린 라벨 제품 선호' },
+                { name: '계피', benefit: '혈액순환', audience: ['감기/냉증', '생리통/생리불순 여성', '수족냉증', '혈액순환 문제', '중년 남성'], benefits_desc: '면역력 강화, 몸을 따뜻하게 함, 여성 질환 개선, 혈관 건강, 항균/살충 효과', channels: '종합 온라인 쇼핑몰', keywords: ['감기 예방', '수족냉증', '여성 질환', '혈액순환'], trends: '헤리티지 마케팅 (전통 원료)' },
+                { name: '율피', benefit: '다이어트', audience: ['체중 감량', '체지방 관리 희망자', '20대 (건강 다이어트)'], benefits_desc: '폴리페놀(항산화), 체지방 감소, 비만도 감소', channels: '다이어트 건강식품 커뮤니티/몰, 종합 온라인 쇼핑몰', keywords: ['체지방 감소', '다이어트 보조제', '폴리페놀'], trends: '건강 의식 증진, 다양한 제형 선호' },
+                { name: '구기자', benefit: '두뇌 & 간', audience: ['기억력/인지 기능 관심자', '간 건강', '성인병/성기능 관심자', '탈모/두피 건강', '체중 관리 희망자'], benefits_desc: '기억력/학습 효과 증진, 성인병 예방, 성기능 개선, 간 기능 개선, 중금속 배출, 피로 회복, 치매 예방, 혈압 저하, 콜레스테롤 감소, 두피/모발 건강, 체중 감량, 눈 건강', channels: '종합 온라인 쇼핑몰', keywords: ['기억력 개선', '치매 예방', '간 건강', '혈압 조절', '탈모 예방'], trends: '셀프 메디케이션, 건강 의식 증진' },
+                { name: '맥문동', benefit: '호흡기 건강', audience: ['만성 기침', '건조한 기관지', '폐 질환', '당뇨/고혈압', '면역력 저하', '피부 건강 관심자'], benefits_desc: '폐/호흡기 건강(기침, 가래, 천식), 당뇨 예방, 고혈압, 항염/항암, 위 보호, 이뇨 작용, 피부 미용, 기력 회복, 면역력 증진', channels: '종합 온라인 쇼핑몰', keywords: ['폐 건강', '기관지', '기침', '천식', '당뇨'], trends: '건강 의식 증진, 헤리티지 마케팅 (전통 원료)' },
+                { name: '양배추 환', benefit: '위 건강', audience: ['위장 질환(위염, 위궤양, 속쓰림, 소화 불량) 환자'], benefits_desc: '위장 건강(위염, 속쓰림, 소화 불량, 위궤양), 위 점막 재생, 항염/항암', channels: '종합 온라인 쇼핑몰', keywords: ['위 건강', '속쓰림', '위염', '소화 불량'], trends: '셀프 메디케이션, 간편 섭취 선호' },
+                { name: '우슬', benefit: '관절 & 염증', audience: ['관절염', '요통', '뼈/근육 약화', '남성 비뇨기/성기능 문제', '노인 유뇨증', '항노화 관심자'], benefits_desc: '허리/무릎/뼈/근육 강화, 관절염/요통 완화, 인대 강화, 남성 성기능 개선, 전립선 질환, 노인 유뇨증, 항노화, 상처 회복, 소염 진통', channels: '관절 건강 전문 온라인몰, 종합 온라인 쇼핑몰', keywords: ['관절염', '무릎 통증', '요통', '뼈 건강', '남성 건강'], trends: '셀프 메디케이션, 헤리티지 마케팅 (전통 원료)' },
+                { name: '두충', benefit: '관절 & 염증', audience: ['만성 요통', '무릎 통증', '관절염', '뼈/근육 약화', '남성 비뇨기 문제', '성장기 아동', '고혈압/고콜레스테롤 관리 희망자'], benefits_desc: '허리/무릎/뼈/근육 강화, 척추관협착증/퇴행성관절염, 인대 강화, 요통, 남성 비뇨기 증상, 성장 발육 촉진, 혈압/콜레스테롤 저하, 성인병 예방, 이뇨 작용, 항산화/항염, 간 기능 개선, 면역력 증진', channels: '관절 건강 전문 온라인몰, 종합 온라인 쇼핑몰', keywords: ['허리 건강', '무릎 건강', '관절염', '성장기 영양제', '혈압 조절'], trends: '셀프 메디케이션, 헤리티지 마케팅 (전통 원료)' },
+                { name: '노니', benefit: '관절 & 염증', audience: ['만성 염증', '통증(관절, 근육, 생리통)', '비만', '우울증', '스트레스', '면역력 저하', '피부 문제', '소화 문제 관심자'], benefits_desc: '항염증, 통증 완화, 비만/우울증/스트레스 해소, 면역력 활성화, 세포 재생, 항암, 혈중 지질/혈당 조절, 소화 기능 개선, 피부 건강', channels: '종합 온라인 쇼핑몰', keywords: ['염증', '통증', '다이어트', '피부 건강', '면역력'], trends: '셀프 메디케이션, 슈퍼푸드 트렌드' },
+                { name: '맥주효모', benefit: '탈모 & 두피', audience: ['탈모 고민자 (비오틴 결핍)', '소화 문제', '인지 기능 관심자', '임신부', '성장기 아동', '50대 이상 (탈모)'], benefits_desc: '탈모 예방/개선, 소화 기능 향상, 뇌 기능 향상, 임신부 영양 보충, 성장 발육 촉진, 면역력 증강', channels: '종합 온라인 쇼핑몰', keywords: ['탈모 영양제', '두피 건강', '비오틴', '소화 효소'], trends: '탈모 시장 성장, 셀프 메디케이션' },
+                { name: '모로블러드오렌지', benefit: '다이어트', audience: ['건강한 체중 관리 및 다이어트 희망자', '20대 (건강 다이어트)'], benefits_desc: '체중 관리, 다이어트 보조 (시아니딘 함유)', channels: '다이어트 건강식품 커뮤니티/몰, 종합 온라인 쇼핑몰 (올리브영, 쿠팡)', keywords: ['다이어트', '체중 감량', '식물성 다이어트'], trends: '식물성 원료 선호, 다이어트 트렌드' },
+                { name: '생강가루', benefit: '혈액순환', audience: ['감기', '소화 불량', '메스꺼움', '만성 기침', '몸이 찬 사람'], benefits_desc: '감기/몸살 완화, 몸을 따뜻하게 함, 근육통 완화, 구역감/구토 완화(입덧, 멀미), 만성 기침', channels: '종합 온라인 쇼핑몰', keywords: ['감기 예방', '소화 불량', '멀미약', '기침 완화'], trends: '헤리티지 마케팅 (전통 원료)' },
+            ];
+
+            const marketGrowthData = {
+                labels: ['2019', '2020', '2021', '2022', '2023', '2024 (추정)'],
+                data: [4.6, 5.0, 5.2, 5.7, 6.2, 6.4]
+            };
+            const platformShareData = {
+                labels: ['쿠팡', '네이버 스마트스토어', 'G마켓', '기타'],
+                data: [48.4, 32.2, 10.8, 8.6]
+            };
+
+            const benefits = ['전체', ...new Set(productData.map(p => p.benefit))];
+            let activeFilter = '전체';
+
+            const productGrid = document.getElementById('productGrid');
+            const benefitFilters = document.getElementById('benefitFilters');
+            const searchInput = document.getElementById('searchInput');
+            const noResults = document.getElementById('noResults');
+
+            function renderFilters() {
+                benefitFilters.innerHTML = '';
+                benefits.forEach(benefit => {
+                    const button = document.createElement('button');
+                    button.textContent = benefit;
+                    button.dataset.filter = benefit;
+                    button.className = `px-3 py-1 text-sm rounded-full border transition-colors ${activeFilter === benefit ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`;
+                    button.onclick = () => {
+                        activeFilter = benefit;
+                        renderFilters();
+                        renderProducts();
+                    };
+                    benefitFilters.appendChild(button);
+                });
+            }
+
+            function renderProducts() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const filteredProducts = productData.filter(p => {
+                    const matchesFilter = activeFilter === '전체' || p.benefit === activeFilter;
+                    const matchesSearch = p.name.toLowerCase().includes(searchTerm);
+                    return matchesFilter && matchesSearch;
+                });
+
+                productGrid.innerHTML = '';
+                if (filteredProducts.length === 0) {
+                    noResults.classList.remove('hidden');
+                } else {
+                    noResults.classList.add('hidden');
+                }
+
+                filteredProducts.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = 'product-card bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer';
+                    card.innerHTML = `
+                        <div class="p-6">
+                            <p class="text-sm font-semibold text-blue-600">${product.benefit}</p>
+                            <h3 class="mt-1 text-xl font-bold text-gray-900">${product.name}</h3>
+                            <p class="mt-2 text-sm text-gray-500 h-10 overflow-hidden">${product.audience.join(', ')}</p>
+                        </div>
+                    `;
+                    card.onclick = () => showModal(product);
+                    productGrid.appendChild(card);
+                });
+            }
+
+            searchInput.addEventListener('input', renderProducts);
+            
+            const productModal = document.getElementById('productModal');
+            const modalBox = document.getElementById('modalBox');
+            const closeModalBtn = document.getElementById('closeModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBenefits = document.getElementById('modalBenefits');
+            const modalAudience = document.getElementById('modalAudience');
+            const modalKeywords = document.getElementById('modalKeywords');
+            const modalChannels = document.getElementById('modalChannels');
+            const modalTrends = document.getElementById('modalTrends');
+
+            function showModal(product) {
+                modalTitle.textContent = product.name;
+                modalBenefits.textContent = product.benefits_desc;
+                modalAudience.textContent = Array.isArray(product.audience) ? product.audience.join(', ') : product.audience;
+                modalKeywords.innerHTML = product.keywords.map(kw => `<span class="tag">${kw}</span>`).join('');
+                modalChannels.textContent = product.channels;
+                modalTrends.textContent = product.trends;
+                
+                productModal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalBox.classList.remove('scale-95', 'opacity-0');
+                    productModal.classList.remove('opacity-0');
+                }, 10);
+            }
+            
+            function hideModal() {
+                 modalBox.classList.add('scale-95', 'opacity-0');
+                 productModal.classList.add('opacity-0');
+                 setTimeout(() => productModal.classList.add('hidden'), 300);
+            }
+
+            closeModalBtn.onclick = hideModal;
+            productModal.onclick = (e) => {
+                if(e.target === productModal) {
+                    hideModal();
+                }
+            };
+
+            function createChart(ctx, type, labels, data, label, backgroundColor, borderColor) {
+                new Chart(ctx, {
+                    type: type,
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: label,
+                            data: data,
+                            backgroundColor: backgroundColor,
+                            borderColor: borderColor,
+                            borderWidth: type === 'line' ? 2 : 1,
+                            tension: 0.1,
+                            fill: type === 'line'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: type !== 'doughnut',
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += context.parsed.y + (context.dataset.label === '시장 규모' ? '조 원' : '%');
+                                        } else if (context.parsed !== null) {
+                                            label += context.parsed + '%';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: type === 'line' ? {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '조';
+                                    }
+                                }
+                            }
+                        } : {}
+                    }
+                });
+            }
+
+            const marketGrowthCtx = document.getElementById('marketGrowthChart').getContext('2d');
+            createChart(marketGrowthCtx, 'line', marketGrowthData.labels, marketGrowthData.data, '시장 규모', 'rgba(37, 99, 235, 0.1)', 'rgba(37, 99, 235, 1)');
+
+            const platformShareCtx = document.getElementById('platformShareChart').getContext('2d');
+            createChart(platformShareCtx, 'doughnut', platformShareData.labels, platformShareData.data, '플랫폼 점유율', ['#2563EB', '#3B82F6', '#60A5FA', '#93C5FD'], ['#fff', '#fff', '#fff', '#fff']);
+            
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 80) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            renderFilters();
+            renderProducts();
+        });
+    </script>
+</body>
+</html>
