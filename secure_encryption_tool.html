@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>보안 암호화 도구 (AES-256)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6; }
+    textarea, input { width: 100%; margin: 5px 0 15px 0; padding: 10px; font-size: 14px; }
+    button { padding: 10px 20px; font-size: 14px; }
+    h2 { margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <h1>🔐 수정 가능한 오프라인 암호화기 (AES-256)</h1>
+
+  <h2>1. 암호화</h2>
+  <label>입력할 내용</label><br>
+  <textarea id="plaintext" rows="4"></textarea>
+
+  <label>비밀번호</label><br>
+  <input type="password" id="encryptPassword">
+
+  <button onclick="encrypt()">암호화</button>
+  <label>암호화 결과</label>
+  <textarea id="encryptedOutput" rows="4" readonly></textarea>
+
+  <h2>2. 복호화 및 수정</h2>
+  <label>암호화된 문자열</label><br>
+  <textarea id="ciphertext" rows="4"></textarea>
+
+  <label>비밀번호</label><br>
+  <input type="password" id="decryptPassword">
+
+  <button onclick="decrypt()">복호화</button>
+  <label>복호화된 내용 (수정 가능)</label>
+  <textarea id="decryptedOutput" rows="24"></textarea>
+
+  <button onclick="reEncrypt()">수정 후 다시 암호화</button>
+  <label>재암호화된 결과</label>
+  <textarea id="reEncryptedOutput" rows="4" readonly></textarea>
+
+<script>
+function encrypt() {
+  var message = document.getElementById("plaintext").value;
+  var password = document.getElementById("encryptPassword").value;
+  if (!message || !password) {
+    alert("입력값과 비밀번호를 모두 입력하세요.");
+    return;
+  }
+  var ciphertext = CryptoJS.AES.encrypt(message, password).toString();
+  document.getElementById("encryptedOutput").value = ciphertext;
+}
+
+function decrypt() {
+  var ciphertext = document.getElementById("ciphertext").value;
+  var password = document.getElementById("decryptPassword").value;
+  if (!ciphertext || !password) {
+    alert("암호문과 비밀번호를 모두 입력하세요.");
+    return;
+  }
+  try {
+    var bytes = CryptoJS.AES.decrypt(ciphertext, password);
+    var originalText = bytes.toString(CryptoJS.enc.Utf8);
+    if (!originalText) throw "복호화 실패";
+    document.getElementById("decryptedOutput").value = originalText;
+  } catch (e) {
+    alert("복호화에 실패했습니다. 비밀번호 또는 암호문을 확인하세요.");
+    document.getElementById("decryptedOutput").value = "";
+  }
+}
+
+function reEncrypt() {
+  var newText = document.getElementById("decryptedOutput").value;
+  var password = document.getElementById("decryptPassword").value;
+  if (!newText || !password) {
+    alert("수정된 텍스트와 비밀번호를 모두 입력하세요.");
+    return;
+  }
+  var newCipher = CryptoJS.AES.encrypt(newText, password).toString();
+  document.getElementById("reEncryptedOutput").value = newCipher;
+}
+</script>
+
+</body>
+</html>
